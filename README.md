@@ -7,7 +7,7 @@ Linux, MacOS 10.15 or newer:
 ```
 pip install fast_colorthief
 ```
-Other operating systems (CMake required):
+Other operating systems ([CMake](https://cmake.org/) required):
 ```
 git clone https://github.com/bedapisl/fast-colorthief
 cd fast-colorthief
