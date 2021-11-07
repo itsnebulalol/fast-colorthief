@@ -11,6 +11,7 @@ Other operating systems (CMake required):
 ```
 git clone https://github.com/bedapisl/fast-colorthief
 cd fast-colorthief
+git submodule update --init --recursive
 pip3 install .
 ```
 
