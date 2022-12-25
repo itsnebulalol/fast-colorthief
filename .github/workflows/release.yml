@@ -1,4 +1,4 @@
-name: Python package
+name: Build and release Python packages
 on: workflow_dispatch
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install cmake
-        uses: jwlawson/actions-setup-cmake@v1.13a
+        uses: jwlawson/actions-setup-cmake@v1.13
       - name: Build package & upload
         run: | 
           python setup.py bdist_wheel
