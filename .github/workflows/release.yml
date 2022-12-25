@@ -25,6 +25,13 @@ jobs:
         run: | 
           pip install wheel
           python setup.py bdist_wheel
+      - name: Auditwheel - Fix package to work on old Linux OSes as well
+        run: |
+          pip install auditwheel
+          auditwheel repair dist/*
+          rm -r dist
+          mv wheelhouse dist
+        if: runner.os == 'Linux'
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
