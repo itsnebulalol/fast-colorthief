@@ -1,0 +1,40 @@
+name: Build and release Python packages - Linux
+on: workflow_dispatch
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
+        #os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        os: ['ubuntu-18.04']
+    runs-on: ${{ matrix.os }}
+    container:
+      image: quay.io/pypa/manylinux2010_x86_64
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python # Set Python version
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+      - name: Install cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+      - name: Build package & upload
+        run: | 
+          pip install wheel
+          python setup.py bdist_wheel
+      - name: Auditwheel - Fix package to work on old Linux OSes as well
+        run: |
+          pip install auditwheel
+          auditwheel repair dist/*
+          rm -r dist
+          mv wheelhouse dist
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_UPLOAD_TOKEN }}
