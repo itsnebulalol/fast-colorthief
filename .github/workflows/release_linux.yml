@@ -4,31 +4,59 @@ on: workflow_dispatch
 jobs:
   build:
 
-    strategy:
-      matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
+    #strategy:
+    #  matrix:
+        #python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
         #os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        os: ['ubuntu-18.04']
-    runs-on: ${{ matrix.os }}
+    #    os: ['ubuntu-18.04']
+    #runs-on: ${{ matrix.os }}
+    runs-on: ['ubuntu-latest']
     container:
       image: quay.io/pypa/manylinux2010_x86_64
 
     steps:
       #- uses: actions/checkout@v3
       - name: Checkout fast-colorthief
-        run: git clone https://github.com/bedapisl/fast-colorthief
+        run: |
+          mkdir fast_colorthief
+          cd fast_colorthief/
+          git clone https://github.com/bedapisl/fast-colorthief
+          cd fast-colorthief/
+          git submodule update --init --recursive
+      - name: Install CMake
+        run: |
+          yum -y install cmake3
+          git clone https://github.com/Kitware/CMake
+          cd CMake
+          mkdir build
+          cd build
+          cmake3 -DCMAKE_USE_OPENSSL=OFF ..
+          make -j 4
+          cd /usr/bin/
+          rm cmake
+          ln -s /fast_colorthief/fast-colorthief/CMake/build/bin/cmake cmake
+      - name: Build wheels
+        run: |
+          cd /fast_colorthief/fast-colorthief/
+          /opt/python/cp35-cp35m/bin/python setup.py bdist_wheel
+          /opt/python/cp36-cp36m/bin/python setup.py bdist_wheel
+          /opt/python/cp37-cp37m/bin/python setup.py bdist_wheel
+          /opt/python/cp38-cp38m/bin/python setup.py bdist_wheel
+          /opt/python/cp39-cp39m/bin/python setup.py bdist_wheel
+          /opt/python/cp310-cp310m/bin/python setup.py bdist_wheel
+          /opt/python/cp311-cp311m/bin/python setup.py bdist_wheel
       #- name: Setup Python # Set Python version
       #  uses: actions/setup-python@v4
       #  with:
       #    python-version: ${{ matrix.python-version }}
-      - name: Checkout submodules
-        run: git submodule update --init --recursive
-      - name: Install cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-      - name: Build package & upload
-        run: | 
-          pip install wheel
-          python setup.py bdist_wheel
+#      - name: Checkout submodules
+#        run: git submodule update --init --recursive
+#      - name: Install cmake
+#        uses: jwlawson/actions-setup-cmake@v1.13
+#      - name: Build package & upload
+#        run: | 
+#          pip install wheel
+#          python setup.py bdist_wheel
       - name: Auditwheel - Fix package to work on old Linux OSes as well
         run: |
           pip install auditwheel
