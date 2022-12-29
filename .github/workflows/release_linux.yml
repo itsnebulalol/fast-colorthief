@@ -67,6 +67,6 @@ jobs:
           cd /fast_colorthief/fast-colorthief/
           /opt/python/cp39-cp39/bin/pip install auditwheel twine
           auditwheel repair dist/*
-          rm -r dist
-          mv wheelhouse dist
-          twine upload -u __token__  -p ${{ secrets.PYPI_UPLOAD_TOKEN }} dist
+          #rm -r dist
+          #mv wheelhouse dist
+          /opt/python/cp39-cp39/bin/python -m twine upload -u __token__  -p ${{ secrets.PYPI_UPLOAD_TOKEN }} wheelhouse/*
