@@ -29,7 +29,7 @@ jobs:
           python setup.py bdist_wheel
       - name: Publish package
         run:
-          twine upload -u __token__  -p ${{ secrets.PYPI_UPLOAD_TOKEN }} dist
+          twine upload -u __token__  -p ${{ secrets.PYPI_UPLOAD_TOKEN }} dist/*
         #uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         #with:
         #  user: __token__
