@@ -14,7 +14,9 @@ jobs:
       image: quay.io/pypa/manylinux2010_x86_64
 
     steps:
-      - uses: actions/checkout@v3
+      #- uses: actions/checkout@v3
+      - name: Checkout fast-colorthief
+        run: git clone https://github.com/bedapisl/fast-colorthief
       - name: Setup Python # Set Python version
         uses: actions/setup-python@v4
         with:
@@ -34,7 +36,5 @@ jobs:
           rm -r dist
           mv wheelhouse dist
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_UPLOAD_TOKEN }}
+        run:
+          twine upload -u __token__  -p ${{ secrets.PYPI_UPLOAD_TOKEN }} dist
