@@ -23,28 +23,29 @@ jobs:
           git clone https://github.com/bedapisl/fast-colorthief
           cd fast-colorthief/
           git submodule update --init --recursive
-      - name: Install CMake
-        run: |
-          yum -y install cmake3
-          git clone https://github.com/Kitware/CMake
-          cd CMake
-          mkdir build
-          cd build
-          cmake3 -DCMAKE_USE_OPENSSL=OFF ..
-          make -j 4
-          cd /usr/bin/
-          rm cmake
-          ln -s /fast_colorthief/fast-colorthief/CMake/build/bin/cmake cmake
+#      - name: Install CMake
+#        run: |
+#          yum -y install cmake3
+#          git clone https://github.com/Kitware/CMake
+#          cd CMake
+#          mkdir build
+#          cd build
+#          cmake3 -DCMAKE_USE_OPENSSL=OFF ..
+#          make -j 4
+#          cd /usr/bin/
+#          rm cmake
+#          ln -s /fast_colorthief/fast-colorthief/CMake/build/bin/cmake cmake
+      - name: List available Python versions
+        run: 
+          ls /opt/python
       - name: Build wheels
         run: |
           cd /fast_colorthief/fast-colorthief/
-          /opt/python/cp35-cp35m/bin/python setup.py bdist_wheel
           /opt/python/cp36-cp36m/bin/python setup.py bdist_wheel
           /opt/python/cp37-cp37m/bin/python setup.py bdist_wheel
-          /opt/python/cp38-cp38m/bin/python setup.py bdist_wheel
-          /opt/python/cp39-cp39m/bin/python setup.py bdist_wheel
-          /opt/python/cp310-cp310m/bin/python setup.py bdist_wheel
-          /opt/python/cp311-cp311m/bin/python setup.py bdist_wheel
+          /opt/python/cp38-cp38/bin/python setup.py bdist_wheel
+          /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
+          /opt/python/cp310-cp310/bin/python setup.py bdist_wheel
       #- name: Setup Python # Set Python version
       #  uses: actions/setup-python@v4
       #  with:
