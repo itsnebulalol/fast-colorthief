@@ -3,20 +3,11 @@ on: workflow_dispatch
 
 jobs:
   build:
-
-    #strategy:
-    #  matrix:
-        #python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
-        #os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-    #    os: ['ubuntu-18.04']
-    #runs-on: ${{ matrix.os }}
     runs-on: ['ubuntu-latest']
     container:
-      #image: quay.io/pypa/manylinux2010_x86_64
       image: quay.io/pypa/manylinux_2_28_x86_64
 
     steps:
-      #- uses: actions/checkout@v3
       - name: Checkout fast-colorthief
         run: |
           cd /
@@ -25,18 +16,6 @@ jobs:
           git clone https://github.com/bedapisl/fast-colorthief
           cd fast-colorthief/
           git submodule update --init --recursive
-#      - name: Install CMake
-#        run: |
-#          yum -y install cmake3
-#          git clone https://github.com/Kitware/CMake
-#          cd CMake
-#          mkdir build
-#          cd build
-#          cmake3 -DCMAKE_USE_OPENSSL=OFF ..
-#          make -j 4
-#          cd /usr/bin/
-#          rm cmake
-#          ln -s /fast_colorthief/fast-colorthief/CMake/build/bin/cmake cmake
       - name: List available Python versions
         run: 
           ls /opt/python
@@ -49,24 +28,9 @@ jobs:
           /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
           /opt/python/cp310-cp310/bin/python setup.py bdist_wheel
           /opt/python/cp311-cp311/bin/python setup.py bdist_wheel
-
-      #- name: Setup Python # Set Python version
-      #  uses: actions/setup-python@v4
-      #  with:
-      #    python-version: ${{ matrix.python-version }}
-#      - name: Checkout submodules
-#        run: git submodule update --init --recursive
-#      - name: Install cmake
-#        uses: jwlawson/actions-setup-cmake@v1.13
-#      - name: Build package & upload
-#        run: | 
-#          pip install wheel
-#          python setup.py bdist_wheel
       - name: Auditwheel & publish
         run: |
           cd /fast_colorthief/fast-colorthief/
           /opt/python/cp39-cp39/bin/pip install auditwheel twine
           auditwheel repair dist/*
-          #rm -r dist
-          #mv wheelhouse dist
           /opt/python/cp39-cp39/bin/python -m twine upload -u __token__  -p ${{ secrets.PYPI_UPLOAD_TOKEN }} wheelhouse/*

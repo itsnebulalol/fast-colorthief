@@ -7,8 +7,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
-        #os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        #os: ['ubuntu-18.04', 'macos-10.15', 'windows-2019']
         os: ['macos-10.15', 'windows-2019', 'macos-11', 'macos-12']
       fail-fast: false
     runs-on: ${{ matrix.os }}
@@ -31,7 +29,3 @@ jobs:
       - name: Publish package
         run:
           twine upload -u __token__  -p ${{ secrets.PYPI_UPLOAD_TOKEN }} dist/*
-        #uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-        #with:
-        #  user: __token__
-        #  password: ${{ secrets.PYPI_UPLOAD_TOKEN }}
