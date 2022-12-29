@@ -65,7 +65,7 @@ jobs:
       - name: Auditwheel & publish
         run: |
           cd /fast_colorthief/fast-colorthief/
-          pip install auditwheel twine
+          /opt/python/cp39-cp39/bin/pip install auditwheel twine
           auditwheel repair dist/*
           rm -r dist
           mv wheelhouse dist
