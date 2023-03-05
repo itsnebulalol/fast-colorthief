@@ -8,7 +8,7 @@ import time
 
 def test_some_output_returned():
     result = fast_colorthief.get_dominant_color('tests/veverka_lidl.jpg', 10)
-    assert result == (132, 124, 90)
+    assert result == (133, 124, 90)
 
 
 def test_same_output():

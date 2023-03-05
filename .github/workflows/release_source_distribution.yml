@@ -1,0 +1,22 @@
+name: Build and release Python packages - MacOS + Windows
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ['ubuntu-latest']
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python # Set Python version
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+      - name: Build package & upload
+        run: | 
+          pip install wheel twine
+          python setup.py sdist
+      - name: Publish package
+        run:
+          twine upload -u __token__  -p ${{ secrets.PYPI_UPLOAD_TOKEN }} dist/*
