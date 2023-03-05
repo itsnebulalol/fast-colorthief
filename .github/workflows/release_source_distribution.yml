@@ -1,4 +1,4 @@
-name: Build and release Python packages - MacOS + Windows
+name: Release source distribution (sdist)
 on: workflow_dispatch
 
 jobs:
