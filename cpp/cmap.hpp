@@ -34,7 +34,9 @@ public:
     }
 
     VBox copy() {return VBox(r1, r2, g1, g2, b1, b2, histo);}
+
     color_t avg() {if (!avg_initialized) {init_avg();} return avg_cache;}
+/*
     bool contains(const color_t& pixel) {
         int rval = std::get<0>(pixel) >> RSHIFT;
         int gval = std::get<1>(pixel) >> RSHIFT;
@@ -43,6 +45,7 @@ public:
                gval >= g1 && gval <= g2 &&
                bval >= b1 && bval <= b2;
     }
+*/
     int count() {if (!count_initialized) {init_count();} return count_cache;}
 
     void init_avg() {
