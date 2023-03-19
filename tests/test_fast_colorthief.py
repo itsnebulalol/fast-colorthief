@@ -11,48 +11,56 @@ def test_some_output_returned():
     assert result == (133, 124, 90)
 
 
-def test_same_output():
-    image_path = 'tests/veverka_lidl.jpg'
-
+def test_same_output(image_path):
     fast_palette = fast_colorthief.get_palette(image_path, 5, 10)
     colorthief_orig = colorthief.ColorThief(image_path)
     original_palette = colorthief_orig.get_palette(5, 10)
+    if fast_palette != original_palette:
+        print(f"Original {original_palette}")
+        print(f"C++ {fast_palette}")
+
     assert (fast_palette == original_palette)
 
 
-def print_speed():
-    image = cv2.imread('tests/veverka_lidl.jpg')
-    image = PIL.Image.open('tests/veverka_lidl.jpg')
+def print_speed(image_path, iterations=10, quality=1):
+    image = cv2.imread(image_path)
+    image = PIL.Image.open(image_path)
     image = image.convert('RGBA')
     image = np.array(image).astype(np.uint8)
-
-    iterations = 10
 
     start = time.time()
 
     for i in range(iterations):
-        fast_colorthief.get_palette(image)
+        fast_colorthief.get_palette(image, quality=quality)
 
     print(f'CPP numpy {(time.time() - start) / iterations}')
 
     start = time.time()
 
     for i in range(iterations):
-        fast_colorthief.get_palette('tests/veverka_lidl.jpg')
+        fast_colorthief.get_palette(image_path, quality=quality)
 
     print(f'CPP image path {(time.time() - start) / iterations}')
 
     start = time.time()
 
     for i in range(iterations):
-        colorthief_orig = colorthief.ColorThief('tests/veverka_lidl.jpg')
-        colorthief_orig.get_palette()
+        colorthief_orig = colorthief.ColorThief(image_path)
+        colorthief_orig.get_palette(quality=quality)
 
     print(f'Python image path {(time.time() - start) / iterations}')
 
 
 if __name__ == '__main__':
-    print_speed()
+    test_same_output('tests/veverka_lidl.jpg')
+    test_same_output('tests/monastery.jpg')
+    print("Normal size image, bad quality")
+    print_speed('tests/veverka_lidl.jpg', iterations=10, quality=10)
+    print("\nNormal size image, best quality")
+    print_speed('tests/veverka_lidl.jpg', iterations=10)
+    print("\nHuge image, best quality")
+    print_speed('tests/monastery.jpg', iterations=1)
+
 
     if False:
         wrong_original = []

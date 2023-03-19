@@ -4,9 +4,27 @@
 
 class VBox {
 public:
-    VBox(int r1, int r2, int g1, int g2, int b1, int b2, std::vector<int>* histo) :
+    VBox(int r1, int r2, int g1, int g2, int b1, int b2, std::vector<int>& histo) :
         r1(r1), r2(r2), g1(g1), g2(g2), b1(b1), b2(b2), histo(histo),
         avg_initialized(false), count_initialized(false) {}
+
+    
+    VBox& operator=(const VBox& other) {
+        r1 = other.r1;
+        g1 = other.g1;
+        b1 = other.b1;
+        r2 = other.r2;
+        g2 = other.g2;
+        b2 = other.b2;
+        // ignore histo, it is always the same
+
+        avg_cache = other.avg_cache;
+        avg_initialized = other.avg_initialized;
+        count_cache = other.count_cache;
+        count_initialized = other.count_initialized;
+        return *this;
+    }
+    
 
     int volume() {
         int sub_r = r2 - r1;
@@ -38,7 +56,8 @@ public:
             for (int j=g1; j<g2 + 1; j++) {
                 for (int k=b1; k<b2 + 1; k++) {
                     int histoindex = get_color_index(i, j, k);
-                    int hval = (*histo)[histoindex];
+                    //int hval = (*histo)[histoindex];
+                    int hval = histo[histoindex];
                     ntot += hval;
                     r_sum += hval * (i + 0.5) * mult;
                     g_sum += hval * (j + 0.5) * mult;
@@ -71,7 +90,8 @@ public:
             for (int j=g1; j<g2 + 1; j++) {
                 for (int k=b1; k<b2 + 1; k++) {
                     int index = get_color_index(i, j, k);
-                    npix += (*histo)[index];
+                    //npix += (*histo)[index];
+                    npix += histo[index];
                 }
             }
         }
@@ -85,7 +105,7 @@ public:
     int g2;
     int b1;
     int b2;
-    std::vector<int>* histo;
+    std::vector<int>& histo;
 
     color_t avg_cache;
     bool avg_initialized;
@@ -139,27 +159,3 @@ private:
     COMP* sort_key;
     bool sorted;
 };
-
-
-class CMap {
-public:
-    CMap(decltype(cmap_compare)* compare_fn) : vboxes(compare_fn) { }
-
-    std::vector<color_t> pallete() {
-        std::vector<color_t> colors;
-        for (auto& [vbox, avg_color] : vboxes.get_contents()) {
-            colors.push_back(avg_color);
-        }
-        return colors;
-    }
-
-    void push(VBox&& box) {
-        vboxes.push({box, box.avg()});
-    }
-
-    int size() {return vboxes.size();}
-
-private:
-    PQueue<std::tuple<VBox, color_t>, decltype(cmap_compare)> vboxes;
-};
-

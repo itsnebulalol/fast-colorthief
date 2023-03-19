@@ -39,4 +39,5 @@ def get_palette(image, color_count=10, quality=10):
         image = image.convert('RGBA')
         image = np.array(image).astype(np.uint8)
 
-    return fast_colorthief_backend.get_palette(image, color_count, quality)
+    palette = fast_colorthief_backend.get_palette(image, color_count, quality)
+    return [tuple(color) for color in palette]

@@ -6,7 +6,8 @@
 
 namespace py = pybind11;
 
-using color_t = std::tuple<uint8_t, uint8_t, uint8_t>;
+//using color_t = std::tuple<uint8_t, uint8_t, uint8_t>;
+using color_t = std::array<uint8_t, 3>;
 
 const int SIGBITS = 5;
 const int RSHIFT = 8 - SIGBITS;
@@ -18,12 +19,12 @@ int get_color_index(int r, int g, int b);
 
 #include "cmap.hpp"
 
-CMap quantize(std::vector<color_t>& pixels, int color_count);
+//CMap quantize(std::vector<int>& histo, VBox& vbox, int color_count, std::vector<color_t>& pixels);
+std::vector<color_t> quantize(std::vector<int>& histo, VBox& vbox, int color_count);
 
 
 //py::array::c_style remove strides (https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html)
 std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image, int color_count, int quality) {
-
     py::buffer_info image_buffer = image.request();
 
     if (image_buffer.ndim != 3) throw std::runtime_error("Image must be 3D matrix (height x width x color)");
@@ -32,6 +33,11 @@ std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image
     std::vector<color_t> pixels;
 
     uint8_t* data = (uint8_t*)image_buffer.ptr;
+    
+    std::vector<int> histo(std::pow(2, 3 * SIGBITS), 0);
+    color_t max_colors{0, 0, 0};
+    color_t min_colors{255, 255, 255};
+    bool pixel_found = false;
 
     for (int pixel_index=0; pixel_index < image_buffer.shape[0] * image_buffer.shape[1]; pixel_index += quality) {
         // Alpha channel big enough
@@ -39,17 +45,39 @@ std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image
             // Not white
             if (data[pixel_index * 4] <= 250 || data[pixel_index * 4 + 1] <= 250 || data[pixel_index * 4 + 2] <= 250) {
                 pixels.push_back({data[pixel_index * 4], data[pixel_index * 4 + 1], data[pixel_index * 4 + 2]});
+
+                int histo_pixel_index = 0;
+                for (int color_index=0; color_index<3; ++color_index) {
+                    uint8_t color_value = data[pixel_index * 4 + color_index] >> RSHIFT;
+                    max_colors[color_index] = std::max(max_colors[color_index], color_value);
+                    min_colors[color_index] = std::min(min_colors[color_index], color_value);
+                    histo_pixel_index += color_value << ((2 - color_index) * SIGBITS);
+                }
+                histo[histo_pixel_index] += 1;
+                pixel_found = true;
             }
         }
     }
-    CMap cmap = quantize(pixels, color_count);
-    return cmap.pallete();
+
+    if (!pixel_found) {
+        throw std::runtime_error("Empty pixels when quantize");
+    }
+
+    //std::cout << int(min_colors[0]) << std::endl;
+    //std::cout << int(max_colors[0]) << std::endl;
+
+    VBox vbox = VBox(min_colors[0], max_colors[0], min_colors[1], max_colors[1], min_colors[2], max_colors[2], histo);
+    return quantize(histo, vbox, color_count);
+    //CMap cmap = quantize(histo, vbox, color_count);
+    //return cmap.pallete();
 }
+
 
 int get_color_index(int r, int g, int b) {
     return (r << (2 * SIGBITS)) + (g << SIGBITS) + b;
 }
 
+/*
 std::vector<int> get_histo(const std::vector<color_t>& pixels) {
     std::vector<int> histo(std::pow(2, 3 * SIGBITS), 0);
 
@@ -62,7 +90,8 @@ std::vector<int> get_histo(const std::vector<color_t>& pixels) {
     }
     return histo;
 }
-
+*/
+/*
 VBox vbox_from_pixels(const std::vector<color_t>& pixels, std::vector<int>& histo) {
     int rmin = 1000000;
     int rmax = 0;
@@ -83,8 +112,8 @@ VBox vbox_from_pixels(const std::vector<color_t>& pixels, std::vector<int>& hist
         bmax = std::max(bval, bmax);
     }
 
-    return VBox(rmin, rmax, gmin, gmax, bmin, bmax, &histo);
-}
+    return VBox(rmin, rmax, gmin, gmax, bmin, bmax, histo);
+}*/
         
 std::tuple<std::optional<VBox>, std::optional<VBox>> median_cut_apply(std::vector<int>& histo, VBox vbox) {
     int rw = vbox.r2 - vbox.r1 + 1;
@@ -241,33 +270,62 @@ void iter(PQueue<VBox, decltype(box_count_compare)>& lh, double target, std::vec
 }
 
 
-CMap quantize(std::vector<color_t>& pixels, int max_color) {
-    if (pixels.size() == 0) 
-        throw std::runtime_error("Empty pixels when quantize");
-    if (max_color < 2 || max_color > 256)
+//CMap quantize(std::vector<int>& histo, VBox& vbox, int color_count, std::vector<color_t>& pixels) {
+std::vector<color_t> quantize(std::vector<int>& histo, VBox& vbox, int color_count) {
+    //if (pixels.size() == 0) 
+    if (color_count < 2 || color_count > 256)
         throw std::runtime_error("Wrong number of max colors when quantize.");
 
-    std::vector<int> histo = get_histo(pixels);
-    VBox vbox = vbox_from_pixels(pixels, histo);
+    //std::vector<int> orig_histo = get_histo(pixels);
+    //VBox orig_vbox = vbox_from_pixels(pixels, histo);
 
+    /*
+    for (int i=0; i<orig_histo.size(); ++i) {
+        if (orig_histo[i] != histo[i]) {
+            std::cout << "Difference on index " << i << ", " << orig_histo[i] << " vs " << histo[i] << std::endl;
+        }
+    }
+    */
+    /*
+    std::cout << "Orig vbox" << std::endl;
+    
+    std::cout << orig_vbox.r1 << std::endl;
+    std::cout << orig_vbox.g1 << std::endl;
+    std::cout << orig_vbox.b1 << std::endl;
+    std::cout << orig_vbox.r2 << std::endl;
+    std::cout << orig_vbox.g2 << std::endl;
+    std::cout << orig_vbox.b2 << std::endl;
+
+    std::cout << "New vbox" << std::endl;
+
+    std::cout << vbox.r1 << std::endl;
+    std::cout << vbox.g1 << std::endl;
+    std::cout << vbox.b1 << std::endl;
+    std::cout << vbox.r2 << std::endl;
+    std::cout << vbox.g2 << std::endl;
+    std::cout << vbox.b2 << std::endl;
+    */
     PQueue<VBox, decltype(box_count_compare)> pq(box_count_compare);
     pq.push(vbox);
 
-    iter(pq, FRACT_BY_POPULATIONS * (double)max_color, histo);
+    iter(pq, FRACT_BY_POPULATIONS * (double)color_count, histo);
 
     PQueue<VBox, decltype(box_count_volume_compare)> pq2(box_count_volume_compare);
     while (pq.size() > 0) {
         pq2.push(pq.pop());
     }
 
-    iter(pq2, max_color - pq2.size(), histo);
-
-    CMap cmap = CMap(cmap_compare);
-    while (pq2.size() > 0) {
-        cmap.push(pq2.pop());
+    iter(pq2, color_count - pq2.size(), histo);
+    pq2.sort();
+    std::vector<color_t> final_colors;
+    for (auto& vbox : pq2.get_contents()) {
+        final_colors.push_back(vbox.avg());
     }
 
-    return cmap;
+    // in the queue, boxes were sorted from smallest to biggest, now we want to return the most important color (=biggest box) first
+    std::reverse(final_colors.begin(), final_colors.end());
+
+    return final_colors;
 }
 
 
