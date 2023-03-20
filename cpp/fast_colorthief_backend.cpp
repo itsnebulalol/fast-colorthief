@@ -1,49 +1,46 @@
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-#include <pybind11/stl.h>
+// #include <pybind11/pybind11.h>
+// #include <pybind11/numpy.h>
+// #include <pybind11/stl.h>
 
 #include <iostream>
 #include <cmath>
 #include <chrono>
 
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
-//using color_t = std::tuple<uint8_t, uint8_t, uint8_t>;
-using color_t = std::array<uint8_t, 3>;
+#include "constants.hpp"
+#include "cmap.hpp"
 
-const int SIGBITS = 5;
-const int RSHIFT = 8 - SIGBITS;
-const int MAX_ITERATION = 1000;
-const double FRACT_BY_POPULATIONS = 0.75;
+// namespace py = pybind11;
+
+//using color_t = std::tuple<uint8_t, uint8_t, uint8_t>;
+// using color_t = std::array<uint8_t, 3>;
+
+// const int SIGBITS = 5;
+// const int RSHIFT = 8 - SIGBITS;
+// const int MAX_ITERATION = 1000;
+// const double FRACT_BY_POPULATIONS = 0.75;
 
 enum Color {RED, GREEN, BLUE};
 
 int get_color_index(int r, int g, int b);
 
-
-#include "cmap.hpp"
-
 //CMap quantize(std::vector<int>& histo, VBox& vbox, int color_count, std::vector<color_t>& pixels);
 std::vector<color_t> quantize(std::vector<int>& histo, VBox& vbox, int color_count);
 
 
-//py::array::c_style remove strides (https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html)
-std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image, int color_count, int quality) {
-    auto start = std::chrono::system_clock::now();
-    py::buffer_info image_buffer = image.request();
+std::tuple<std::vector<int>, color_t, color_t, bool> get_histo_cpp(uint8_t* data, int pixel_count, int quality) {
 
-    if (image_buffer.ndim != 3) throw std::runtime_error("Image must be 3D matrix (height x width x color)");
-    if (image_buffer.shape[2] != 4) throw std::runtime_error("Image must have 4 channels (red x green x blue x alpha)");
-
-    uint8_t* data = (uint8_t*)image_buffer.ptr;
-    
     std::vector<int> histo(std::pow(2, 3 * SIGBITS), 0);
     color_t max_colors{0, 0, 0};
     color_t min_colors{255, 255, 255};
     bool pixel_found = false;
 
-    for (int pixel_index=0; pixel_index < image_buffer.shape[0] * image_buffer.shape[1]; pixel_index += quality) {
+    for (int pixel_index=0; pixel_index < pixel_count; pixel_index += quality) {
         // Alpha channel big enough
         if (data[pixel_index * 4 + 3] >= 125) {
             // Not white
@@ -61,8 +58,107 @@ std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image
             }
         }
     }
+    return {histo, min_colors, max_colors, pixel_found}; 
+}
 
-    if (!pixel_found) {
+
+
+//py::array::c_style remove strides (https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html)
+std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image, int color_count, int quality) {
+    auto start = std::chrono::system_clock::now();
+    py::buffer_info image_buffer = image.request();
+
+    if (image_buffer.ndim != 3) throw std::runtime_error("Image must be 3D matrix (height x width x color)");
+    if (image_buffer.shape[2] != 4) throw std::runtime_error("Image must have 4 channels (red x green x blue x alpha)");
+
+    uint8_t* data = (uint8_t*)image_buffer.ptr;
+    int pixel_count = image_buffer.shape[0] * image_buffer.shape[1];
+    
+    
+    // std::vector<int> histo(std::pow(2, 3 * SIGBITS), 0);
+    // color_t max_colors{0, 0, 0};
+    // color_t min_colors{255, 255, 255};
+    // bool pixel_found = false;
+
+    // for (int pixel_index=0; pixel_index < image_buffer.shape[0] * image_buffer.shape[1]; pixel_index += quality) {
+    //     // Alpha channel big enough
+    //     if (data[pixel_index * 4 + 3] >= 125) {
+    //         // Not white
+    //         if (data[pixel_index * 4] <= 250 || data[pixel_index * 4 + 1] <= 250 || data[pixel_index * 4 + 2] <= 250) {
+
+    //             int histo_pixel_index = 0;
+    //             for (int color_index=0; color_index<3; ++color_index) {
+    //                 uint8_t color_value = data[pixel_index * 4 + color_index] >> RSHIFT;
+    //                 max_colors[color_index] = std::max(max_colors[color_index], color_value);
+    //                 min_colors[color_index] = std::min(min_colors[color_index], color_value);
+    //                 histo_pixel_index += color_value << ((2 - color_index) * SIGBITS);
+    //             }
+    //             histo[histo_pixel_index] += 1;
+    //             pixel_found = true;
+    //         }
+    //     }
+    // }
+
+    // auto start_cpp = std::chrono::system_clock::now();
+    // auto preprocess_tuple = get_histo_cpp(data, pixel_count, quality);
+    // auto end_cpp = std::chrono::system_clock::now();
+    auto start_cuda = std::chrono::system_clock::now();
+    auto preprocess_tuple_2 = get_histo_cuda(data, pixel_count, quality);
+    auto end_cuda = std::chrono::system_clock::now();
+
+    auto start_cpp = std::chrono::system_clock::now();
+    auto preprocess_tuple = get_histo_cpp(data, pixel_count, quality);
+    auto end_cpp = std::chrono::system_clock::now();
+    
+
+    std::cout << "CPP time " << (end_cpp - start_cpp).count() / 1000000 << " Cuda time: " << (end_cuda - start_cuda).count() / 1000000 << std::endl;
+
+    std::vector<int> histo = std::get<0>(preprocess_tuple);
+    color_t min_colors = std::get<1>(preprocess_tuple);
+    color_t max_colors = std::get<2>(preprocess_tuple);
+    bool pixel_found = std::get<3>(preprocess_tuple);
+
+    std::vector<int> histo_2 = std::get<0>(preprocess_tuple_2);
+    color_t min_colors_2 = std::get<1>(preprocess_tuple_2);
+    color_t max_colors_2 = std::get<2>(preprocess_tuple_2);
+    bool pixel_found_2 = std::get<3>(preprocess_tuple_2);
+
+    if (min_colors_2 != min_colors) {
+        std::cout << "Difference in min colors" << std::endl;
+    }
+
+    if (max_colors_2 != max_colors) {
+        std::cout << "Difference in max colors" << std::endl;
+    }
+/*
+    int orig_bigger = 0;
+    int cuda_bigger = 0;
+    int different = 0;
+    int same = 0;
+    int zero = 0;
+    int orig_sum = 0;
+    int cuda_sum = 0;
+    for (int i=0; i<histo_2.size(); ++i) {
+        if (histo_2[i] > histo[i]) cuda_bigger += 1;
+        if (histo_2[i] < histo[i]) orig_bigger += 1;
+        if (histo_2[i] == histo[i] && (histo_2[i] != 0 || histo[i] != 0)) same += 1;
+        if (histo_2[i] == 0 && histo[i] == 0) zero += 1;
+        if (histo_2[i] != histo[i]) different += 1;
+        orig_sum += histo[i];
+        cuda_sum += histo_2[i];
+        //std::cout << "Orig: " << histo[i] << " cuda: " << histo_2[i] << std::endl;
+    }
+
+    std::cout << "Orig bigger: " << orig_bigger << std::endl;
+    std::cout << "CUDA bigger: " << cuda_bigger << std::endl;
+    std::cout << "Different: " << different << std::endl;
+    std::cout << "Same: " << same << std::endl;
+    std::cout << "Zero: " << zero << std::endl;
+    std::cout << "Orig sum: " << orig_sum << std::endl;
+    std::cout << "Cuda sum: " << cuda_sum << std::endl;
+*/
+
+    if (!pixel_found_2) {
         throw std::runtime_error("Empty pixels when quantize");
     }
 
@@ -70,8 +166,8 @@ std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image
 
     auto start2 = std::chrono::system_clock::now();
 
-    VBox vbox = VBox(min_colors[0], max_colors[0], min_colors[1], max_colors[1], min_colors[2], max_colors[2], histo);
-    auto result = quantize(histo, vbox, color_count);
+    VBox vbox = VBox(min_colors_2[0], max_colors_2[0], min_colors_2[1], max_colors_2[1], min_colors_2[2], max_colors_2[2], histo_2);
+    auto result = quantize(histo_2, vbox, color_count);
 
     auto end2 = std::chrono::system_clock::now();
 

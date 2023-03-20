@@ -1,6 +1,8 @@
 #include <vector>
 #include <unordered_map>
 
+int get_color_index(int r, int g, int b);
+
 
 class VBox {
 public:
@@ -59,7 +61,6 @@ public:
             for (int j=g1; j<g2 + 1; j++) {
                 for (int k=b1; k<b2 + 1; k++) {
                     int histoindex = get_color_index(i, j, k);
-                    //int hval = (*histo)[histoindex];
                     int hval = histo[histoindex];
                     ntot += hval;
                     r_sum += hval * (i + 0.5) * mult;
