@@ -6,7 +6,7 @@ import version
 __version__ = version.__version__
 
 
-def get_dominant_color(image, quality):
+def get_dominant_color(image, quality, use_gpu=False):
     """Get the dominant color.
     :param image: input image can be: 
                   1) numpy array in RGBA format
@@ -18,11 +18,11 @@ def get_dominant_color(image, quality):
                     visually most dominant color
     :return tuple: (r, g, b)
     """
-    palette = get_palette(image, 5, quality)
+    palette = get_palette(image, 5, quality, use_gpu)
     return palette[0]
 
 
-def get_palette(image, color_count=10, quality=10):
+def get_palette(image, color_count=10, quality=10, use_gpu=False):
     """Build a color palette.  We are using the modified median cut algorithm to cluster similar colors.
     :param image: input image can be: 
                   1) numpy array in RGBA format
@@ -39,5 +39,5 @@ def get_palette(image, color_count=10, quality=10):
         image = image.convert('RGBA')
         image = np.array(image).astype(np.uint8)
 
-    palette = fast_colorthief_backend.get_palette(image, color_count, quality)
+    palette = fast_colorthief_backend.get_palette(image, color_count, quality, use_gpu)
     return [tuple(color) for color in palette]

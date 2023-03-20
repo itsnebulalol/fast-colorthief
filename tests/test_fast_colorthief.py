@@ -54,10 +54,10 @@ def print_speed(image_path, iterations=10, quality=1):
 if __name__ == '__main__':
     test_same_output('tests/veverka_lidl.jpg', quality=1)
     test_same_output('tests/monastery.jpg', quality=1)
-    #print("Normal size image, bad quality")
-    #print_speed('tests/veverka_lidl.jpg', iterations=10, quality=10)
-    #print("\nNormal size image, best quality")
-    #print_speed('tests/veverka_lidl.jpg', iterations=10)
+    print("Normal size image, bad quality")
+    print_speed('tests/veverka_lidl.jpg', iterations=10, quality=10)
+    print("\nNormal size image, best quality")
+    print_speed('tests/veverka_lidl.jpg', iterations=10)
     print("\nHuge image, best quality")
     print_speed('tests/monastery.jpg', iterations=1)
 

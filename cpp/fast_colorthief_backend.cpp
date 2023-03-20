@@ -61,11 +61,8 @@ std::tuple<std::vector<int>, color_t, color_t, bool> get_histo_cpp(uint8_t* data
     return {histo, min_colors, max_colors, pixel_found}; 
 }
 
-
-
 //py::array::c_style remove strides (https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html)
-std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image, int color_count, int quality) {
-    auto start = std::chrono::system_clock::now();
+std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image, int color_count, int quality, bool use_gpu) {
     py::buffer_info image_buffer = image.request();
 
     if (image_buffer.ndim != 3) throw std::runtime_error("Image must be 3D matrix (height x width x color)");
@@ -73,106 +70,26 @@ std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image
 
     uint8_t* data = (uint8_t*)image_buffer.ptr;
     int pixel_count = image_buffer.shape[0] * image_buffer.shape[1];
-    
-    
-    // std::vector<int> histo(std::pow(2, 3 * SIGBITS), 0);
-    // color_t max_colors{0, 0, 0};
-    // color_t min_colors{255, 255, 255};
-    // bool pixel_found = false;
 
-    // for (int pixel_index=0; pixel_index < image_buffer.shape[0] * image_buffer.shape[1]; pixel_index += quality) {
-    //     // Alpha channel big enough
-    //     if (data[pixel_index * 4 + 3] >= 125) {
-    //         // Not white
-    //         if (data[pixel_index * 4] <= 250 || data[pixel_index * 4 + 1] <= 250 || data[pixel_index * 4 + 2] <= 250) {
-
-    //             int histo_pixel_index = 0;
-    //             for (int color_index=0; color_index<3; ++color_index) {
-    //                 uint8_t color_value = data[pixel_index * 4 + color_index] >> RSHIFT;
-    //                 max_colors[color_index] = std::max(max_colors[color_index], color_value);
-    //                 min_colors[color_index] = std::min(min_colors[color_index], color_value);
-    //                 histo_pixel_index += color_value << ((2 - color_index) * SIGBITS);
-    //             }
-    //             histo[histo_pixel_index] += 1;
-    //             pixel_found = true;
-    //         }
-    //     }
-    // }
-
-    // auto start_cpp = std::chrono::system_clock::now();
-    // auto preprocess_tuple = get_histo_cpp(data, pixel_count, quality);
-    // auto end_cpp = std::chrono::system_clock::now();
-    auto start_cuda = std::chrono::system_clock::now();
-    auto preprocess_tuple_2 = get_histo_cuda(data, pixel_count, quality);
-    auto end_cuda = std::chrono::system_clock::now();
-
-    auto start_cpp = std::chrono::system_clock::now();
-    auto preprocess_tuple = get_histo_cpp(data, pixel_count, quality);
-    auto end_cpp = std::chrono::system_clock::now();
-    
-
-    std::cout << "CPP time " << (end_cpp - start_cpp).count() / 1000000 << " Cuda time: " << (end_cuda - start_cuda).count() / 1000000 << std::endl;
-
-    std::vector<int> histo = std::get<0>(preprocess_tuple);
-    color_t min_colors = std::get<1>(preprocess_tuple);
-    color_t max_colors = std::get<2>(preprocess_tuple);
-    bool pixel_found = std::get<3>(preprocess_tuple);
-
-    std::vector<int> histo_2 = std::get<0>(preprocess_tuple_2);
-    color_t min_colors_2 = std::get<1>(preprocess_tuple_2);
-    color_t max_colors_2 = std::get<2>(preprocess_tuple_2);
-    bool pixel_found_2 = std::get<3>(preprocess_tuple_2);
-
-    if (min_colors_2 != min_colors) {
-        std::cout << "Difference in min colors" << std::endl;
+    std::tuple<std::vector<int>, color_t, color_t, bool> preprocessing_result;
+    if (use_gpu && quality == 1) {
+        preprocessing_result = get_histo_cuda(data, pixel_count, quality);
+    }
+    else {
+        preprocessing_result = get_histo_cpp(data, pixel_count, quality);
     }
 
-    if (max_colors_2 != max_colors) {
-        std::cout << "Difference in max colors" << std::endl;
-    }
-/*
-    int orig_bigger = 0;
-    int cuda_bigger = 0;
-    int different = 0;
-    int same = 0;
-    int zero = 0;
-    int orig_sum = 0;
-    int cuda_sum = 0;
-    for (int i=0; i<histo_2.size(); ++i) {
-        if (histo_2[i] > histo[i]) cuda_bigger += 1;
-        if (histo_2[i] < histo[i]) orig_bigger += 1;
-        if (histo_2[i] == histo[i] && (histo_2[i] != 0 || histo[i] != 0)) same += 1;
-        if (histo_2[i] == 0 && histo[i] == 0) zero += 1;
-        if (histo_2[i] != histo[i]) different += 1;
-        orig_sum += histo[i];
-        cuda_sum += histo_2[i];
-        //std::cout << "Orig: " << histo[i] << " cuda: " << histo_2[i] << std::endl;
-    }
+    std::vector<int> histo = std::get<0>(preprocessing_result);
+    color_t min_colors = std::get<1>(preprocessing_result);
+    color_t max_colors = std::get<2>(preprocessing_result);
+    bool pixel_found = std::get<3>(preprocessing_result);
 
-    std::cout << "Orig bigger: " << orig_bigger << std::endl;
-    std::cout << "CUDA bigger: " << cuda_bigger << std::endl;
-    std::cout << "Different: " << different << std::endl;
-    std::cout << "Same: " << same << std::endl;
-    std::cout << "Zero: " << zero << std::endl;
-    std::cout << "Orig sum: " << orig_sum << std::endl;
-    std::cout << "Cuda sum: " << cuda_sum << std::endl;
-*/
-
-    if (!pixel_found_2) {
+    if (!pixel_found) {
         throw std::runtime_error("Empty pixels when quantize");
     }
 
-    auto end = std::chrono::system_clock::now();
-
-    auto start2 = std::chrono::system_clock::now();
-
-    VBox vbox = VBox(min_colors_2[0], max_colors_2[0], min_colors_2[1], max_colors_2[1], min_colors_2[2], max_colors_2[2], histo_2);
-    auto result = quantize(histo_2, vbox, color_count);
-
-    auto end2 = std::chrono::system_clock::now();
-
-    std::cout << "First time " << (end - start).count() << " second time: " << (end2 - start2).count() << std::endl; 
-    return result;
+    VBox vbox = VBox(min_colors[0], max_colors[0], min_colors[1], max_colors[1], min_colors[2], max_colors[2], histo);
+    return quantize(histo, vbox, color_count);
 }
 
 
@@ -353,41 +270,11 @@ std::vector<color_t> quantize(std::vector<int>& histo, VBox& vbox, int color_cou
     if (color_count < 2 || color_count > 256)
         throw std::runtime_error("Wrong number of max colors when quantize.");
 
-    //std::vector<int> orig_histo = get_histo(pixels);
-    //VBox orig_vbox = vbox_from_pixels(pixels, histo);
-
-    /*
-    for (int i=0; i<orig_histo.size(); ++i) {
-        if (orig_histo[i] != histo[i]) {
-            std::cout << "Difference on index " << i << ", " << orig_histo[i] << " vs " << histo[i] << std::endl;
-        }
-    }
-    */
-    /*
-    std::cout << "Orig vbox" << std::endl;
-    
-    std::cout << orig_vbox.r1 << std::endl;
-    std::cout << orig_vbox.g1 << std::endl;
-    std::cout << orig_vbox.b1 << std::endl;
-    std::cout << orig_vbox.r2 << std::endl;
-    std::cout << orig_vbox.g2 << std::endl;
-    std::cout << orig_vbox.b2 << std::endl;
-
-    std::cout << "New vbox" << std::endl;
-
-    std::cout << vbox.r1 << std::endl;
-    std::cout << vbox.g1 << std::endl;
-    std::cout << vbox.b1 << std::endl;
-    std::cout << vbox.r2 << std::endl;
-    std::cout << vbox.g2 << std::endl;
-    std::cout << vbox.b2 << std::endl;
-    */
     PQueue<VBox, decltype(box_count_compare)> pq(box_count_compare);
     pq.push(vbox);
 
     iter(pq, std::ceil(FRACT_BY_POPULATIONS * color_count), histo);
 
-    //std::cout <<FRACT_BY_POPULATIONS * (double)color_count << std::endl;
 
     PQueue<VBox, decltype(box_count_volume_compare)> pq2(box_count_volume_compare);
     while (pq.size() > 0) {
