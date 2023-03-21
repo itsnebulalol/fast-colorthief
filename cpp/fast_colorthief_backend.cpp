@@ -1,7 +1,3 @@
-// #include <pybind11/pybind11.h>
-// #include <pybind11/numpy.h>
-// #include <pybind11/stl.h>
-
 #include <iostream>
 #include <cmath>
 #include <chrono>
@@ -15,21 +11,10 @@ namespace py = pybind11;
 #include "constants.hpp"
 #include "cmap.hpp"
 
-// namespace py = pybind11;
-
-//using color_t = std::tuple<uint8_t, uint8_t, uint8_t>;
-// using color_t = std::array<uint8_t, 3>;
-
-// const int SIGBITS = 5;
-// const int RSHIFT = 8 - SIGBITS;
-// const int MAX_ITERATION = 1000;
-// const double FRACT_BY_POPULATIONS = 0.75;
-
 enum Color {RED, GREEN, BLUE};
 
 int get_color_index(int r, int g, int b);
 
-//CMap quantize(std::vector<int>& histo, VBox& vbox, int color_count, std::vector<color_t>& pixels);
 std::vector<color_t> quantize(std::vector<int>& histo, VBox& vbox, int color_count);
 
 

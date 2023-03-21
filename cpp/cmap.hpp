@@ -85,7 +85,6 @@ public:
             for (int j=g1; j<g2 + 1; j++) {
                 for (int k=b1; k<b2 + 1; k++) {
                     int index = get_color_index(i, j, k);
-                    //npix += (*histo)[index];
                     npix += histo[index];
                 }
             }

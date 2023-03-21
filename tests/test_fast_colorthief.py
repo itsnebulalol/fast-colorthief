@@ -19,7 +19,7 @@ def test_same_output(image_path, quality=10):
         print(f"Original {original_palette}")
         print(f"C++ {fast_palette}")
 
-    #assert (fast_palette == original_palette)
+    assert (fast_palette == original_palette)
 
 
 def print_speed(image_path, iterations=10, quality=1):
