@@ -12,7 +12,5 @@ const int MAX_ITERATION = 1000;
 const double FRACT_BY_POPULATIONS = 0.75;
 const int NUM_BLOCKS = 16;
 const int THREADS_PER_BLOCK = 256;
-//const int NUM_BLOCKS = 1;
-//const int THREADS_PER_BLOCK = 1;
 
 std::tuple<std::vector<int>, color_t, color_t, bool> get_histo_cuda(uint8_t* data, int pixel_count, int quality);
