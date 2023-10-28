@@ -24,7 +24,7 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.14
       - name: Build package & upload
         run: | 
-          pip install wheel twine
+          pip install wheel twine setuptools
           python setup.py bdist_wheel
       - name: Publish package
         run:

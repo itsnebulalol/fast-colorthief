@@ -7,11 +7,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(pybind11)
 
-enable_language(CUDA)
+#enable_language(CUDA)
 
-add_library(cuda_fast_colorthief STATIC cpp/kernel.cu)
-set_target_properties(cuda_fast_colorthief PROPERTIES LINKER_LANGUAGE CUDA)
-set_target_properties(cuda_fast_colorthief PROPERTIES CUDA_ARCHITECTURES "50;72")
+#add_library(cuda_fast_colorthief STATIC cpp/kernel.cu)
+#set_target_properties(cuda_fast_colorthief PROPERTIES LINKER_LANGUAGE CUDA)
+#set_target_properties(cuda_fast_colorthief PROPERTIES CUDA_ARCHITECTURES "50;72")
 
 pybind11_add_module(fast_colorthief_backend cpp/fast_colorthief_backend.cpp)
 
