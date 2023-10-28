@@ -4,11 +4,11 @@ A Python module for selecting most dominant colors in the image. Based on https:
 
 ## Installation
 Linux, MacOS 10.15 or newer:
-```
+```shell
 pip install fast_colorthief
 ```
 Other operating systems ([CMake](https://cmake.org/) required):
-```
+```shell
 git clone https://github.com/bedapisl/fast-colorthief
 cd fast-colorthief
 git submodule update --init --recursive
@@ -16,7 +16,7 @@ pip3 install .
 ```
 
 ## Example
-```
+```python
 import fast_colorthief
 
 image_path = 'image.jpg'
