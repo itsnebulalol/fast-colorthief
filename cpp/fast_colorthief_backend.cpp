@@ -57,12 +57,13 @@ std::vector<color_t> get_palette(py::array_t<uint8_t,  py::array::c_style> image
     int pixel_count = image_buffer.shape[0] * image_buffer.shape[1];
 
     std::tuple<std::vector<int>, color_t, color_t, bool> preprocessing_result;
-    if (use_gpu && quality == 1) {
-        preprocessing_result = get_histo_cuda(data, pixel_count, quality);
-    }
-    else {
-        preprocessing_result = get_histo_cpp(data, pixel_count, quality);
-    }
+    preprocessing_result = get_histo_cpp(data, pixel_count, quality);
+    // if (use_gpu && quality == 1) {
+    //     preprocessing_result = get_histo_cuda(data, pixel_count, quality);
+    // }
+    // else {
+    //     preprocessing_result = get_histo_cpp(data, pixel_count, quality);
+    // }
 
     std::vector<int> histo = std::get<0>(preprocessing_result);
     color_t min_colors = std::get<1>(preprocessing_result);
