@@ -75,7 +75,7 @@ public:
             b_avg = int(mult * (b1 + b2 + 1) / 2.0);
         }
 
-        avg_cache = {r_avg, g_avg, b_avg};
+        avg_cache = {uint8_t(r_avg), uint8_t(g_avg), uint8_t(b_avg)};
         avg_initialized = true;
     }
 

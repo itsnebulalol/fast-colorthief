@@ -15,4 +15,4 @@ add_subdirectory(pybind11)
 
 pybind11_add_module(fast_colorthief_backend cpp/fast_colorthief_backend.cpp)
 
-target_link_libraries(fast_colorthief_backend PRIVATE cuda_fast_colorthief)
+#target_link_libraries(fast_colorthief_backend PRIVATE cuda_fast_colorthief)
